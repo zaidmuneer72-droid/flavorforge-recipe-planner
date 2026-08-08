@@ -1,8 +1,14 @@
 const BASE_URL = import.meta.env.VITE_MEAL_API_BASE_URL || 'https://www.themealdb.com/api/json/v1/1'
 
+function forceHttpsUrl(url) {
+	const parsedUrl = new URL(url, 'https://www.themealdb.com')
+	parsedUrl.protocol = 'https:'
+	return parsedUrl.toString()
+}
+
 async function fetchJson(path) {
 	try {
-		const res = await fetch(`${BASE_URL}${path}`)
+		const res = await fetch(forceHttpsUrl(`${BASE_URL}${path}`))
 		if (!res.ok) throw new Error(`Network response was not ok: ${res.status}`)
 		return await res.json()
 	} catch (error) {
@@ -35,7 +41,9 @@ export async function getMealDetails(id) {
 export async function getCategories() {
 	try {
 		const data = await fetchJson('/categories.php')
-		return data.categories || []
+		return Array.isArray(data.categories)
+			? data.categories.filter((category) => category && category.strCategory)
+			: []
 	} catch (error) {
 		console.error('getCategories error:', error)
 		return []
@@ -54,15 +62,15 @@ export async function filterByCategory(category) {
 }
 
 export function parseIngredients(meal = {}) {
-	const ingredients = [];
+	const ingredients = []
 	for (let i = 1; i <= 20; i++) {
-		const name = (meal[`strIngredient${i}`] || '').trim();
-		const measure = (meal[`strMeasure${i}`] || '').trim();
+		const name = (meal[`strIngredient${i}`] || '').trim()
+		const measure = (meal[`strMeasure${i}`] || '').trim()
 		if (name && name !== '') {
-			ingredients.push({ name, measure });
+			ingredients.push({ name, measure })
 		}
 	}
-	return ingredients;
+	return ingredients
 }
 
 export default {
